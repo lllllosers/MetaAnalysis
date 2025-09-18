@@ -1,0 +1,37 @@
+"数据提取与录入指南（有机肥替代化肥Meta分析）
+
+【基本信息】
+- StudyID: 自定义编号（作者+年份，如 Li_2018a）
+- Author/Year: 论文作者与年份
+- Country/Region: 试验地点
+- Crop: 仅限 rice/wheat/maize
+
+【试验信息】
+- Field trial: 必须是田间试验(Yes/No)
+- Organic fertilizer type: 厩肥、堆肥、畜禽粪肥、沼液/沼渣、商品有机肥等
+- Substitution ratio: 以氮等当量计算的有机肥替代比例（%）
+- Equal N: 实验与对照是否氮等量
+- P/K balanced: P、K是否等量
+- Duration: 连续施用年限
+- Irrigation: 是否有灌溉措施
+
+【数据录入】
+- Soil depth: 采样深度(cm)
+- Outcome: 指标名称 (如 SOC, TN, MBC, UE, N2O 等)
+- Unit: 与原文一致
+- Group: Exp=有机肥替代处理；Control=纯化肥处理
+- Mean, SD, n: 提取原始均值、标准差、样本数
+- Notes: 特殊情况或转换说明
+
+【注意事项】
+1. 一条记录 = 一个指标在一组(Exp/Control)下的数据。
+   因此同一研究会有多行（不同指标/不同土层/不同年份）。
+2. 确保 Exp 与 Control 成对出现，方便RevMan/R分析。
+3. 若仅有SE/CI，请换算为SD后填写。
+4. 若数据需数字化提取，请在Notes中标注“digitized”。
+5. 对于0或接近0的数据(如N2O)，取对数前需加极小常数。
+
+【RevMan导入提示】
+- RevMan需要每个Indicator下Exp与Control的 Mean/SD/n。
+- 本表可直接导出为CSV后，按Indicator分组导入RevMan。
+"

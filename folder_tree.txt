@@ -1,11 +1,3 @@
-# Meta-analysis Project
-
-This repository contains a reproducible workflow for a global meta-analysis on cropland management practices and soil/crop responses (example: SOC).
-
----
-
-## 📂 Project Structure
-
 organicSub/
 ├─ data/                             # 数据总目录
 │  ├─ raw/                           # 原始数据（只读）
@@ -14,8 +6,10 @@ organicSub/
 │  │  └─ PDFs/                       # 原文PDF与补充材料
 │  ├─ external/                      # 外部数据（气候、土壤图层等）
 │  ├─ interim/                       # 中间过程数据（清洗、配对、补齐SD前后）
-│  └─ processed/                     # 效应量计算后的数据（可直接建模/作图）
-│     └─ SOC_effectsize.csv
+│  └─ processed/                     # 可直接用于建模/作图的效应量数据
+│     ├─ soc_effectsize.csv
+│     ├─ mbc_effectsize.csv
+│     └─ yield_effectsize.csv
 │
 ├─ scripts/                          # 分步可复用脚本（R为主）
 │  ├─ R/
@@ -40,38 +34,16 @@ organicSub/
 │  └─ plot_theme.yaml                # 主题、字体、尺寸、颜色（期刊要求）
 │
 ├─ results/                          # 输出成果（版本可追踪）
-│  ├─ figures/                       # 图件 (森林图、亚组分析图、漏斗图等)
+│  ├─ figures/
 │  │  ├─ Fig1_Forest_SOC.png
 │  │  ├─ Fig2_Subgroups_SOC.png
 │  │  └─ FigS1_Funnel_SOC.png
-│  ├─ tables/                        # 导出结果表
+│  ├─ tables/
 │  │  ├─ Tab1_Dataset_Summary.csv
 │  │  ├─ Tab2_OverallEffects_SOC.csv
 │  │  └─ TabS1_Subgroup_SOC.csv
 │  ├─ models/                        # 模型对象与参数摘要（.rds/.json）
 │  ├─ logs/                          # 运行日志与数据质检报告
-│  │   ├─ 00_setup/                 # 环境与配置检查（可选）
-│  │   │  └─ session_info.txt
-│  │   ├─ 01_validate_input/        # 原始输入检查
-│  │   │  ├─ indicators_overview.csv
-│  │   │  ├─ units_overview.csv
-│  │   │  ├─ validate_<IND>_missing.csv
-│  │   │  ├─ validate_<IND>_basic_checks.csv
-│  │   │  └─ validate_<IND>_flags.csv
-│  │   ├─ 02_clean_standardize/     # 清洗与标准化
-│  │   │  ├─ units_overview_after_clean.csv
-│  │   │  ├─ soil_layer_counts.csv
-│  │   │  └─ check_<IND>_std_nonpos.csv
-│  │   ├─ 03_impute_variance/       # SD补齐与记录
-│  │   │  ├─ impute_<IND>_cv_notes.csv
-│  │   │  ├─ impute_<IND>_summary.csv
-│  │   │  └─ impute_compare_metagear.csv   # 若启用metagear
-│  │   ├─ 04_effect_size/           # 效应量计算后的质检
-│  │   │  └─ datacheck_<IND>.csv
-│  │   └─ 05_meta_models/           # 合并效应与异质性
-│  │      ├─ overall_<IND>_effect.csv
-│  │      ├─ overall_<IND>_heterogeneity.csv
-│  │      └─ influence_outliers.csv       # 若做影响点/离群点
 │  └─ exports/                       # 向外共享的打包结果（zip）
 │
 ├─ docs/                             # 文档与写作材料
@@ -92,60 +64,5 @@ organicSub/
 │  └─ SOC_exploration.Rmd
 │
 ├─ renv/ & renv.lock                 # （可选）R环境锁定，保证复现
-├─ .Rproj                            #RStudio工程文件
+├─ .Rproj                            # （可选）RStudio工程文件
 └─ README.md                         # 项目简介与使用说明（入口）
-
-
----
-
-## 🚀 Workflow
-
-1. **准备数据**
-   - 将提取好的数据文件放入 `data/raw/Original_DataExtraction.xlsx`。
-   - 数据结构：`LongData` 表包含 `indicator, Mean_E, SD_E, n_E, Mean_C, SD_C, n_C`。
-
-2. **运行分析**
-   在 RStudio 中，依次运行：
-   ```r
-   source("scripts/R/00_setup.R")
-   source("scripts/R/01_validate_input.R")
-   source("scripts/R/03_impute_variance.R")
-   source("scripts/R/04_compute_effect_size.R")
-   输出：
-   data/interim/soc_imputed.csv
-   data/processed/soc_effectsize.csv
-   results/logs/validate_SOC_missing.csv
-   results/logs/datacheck_soc.csv
-3. **模型与可视化**（后续逐步完善）
-   ```r
-   source("scripts/R/05_meta_models.R")   # 随机效应模型
-   source("scripts/R/06_sensitivity.R")   # 敏感性分析
-   source("scripts/R/08_visualization.R") # 森林图、漏斗图
-
-
-## 🛠 Key Features
-
-* 统一配置：所有参数集中在 config/meta_config.yaml。
-* 模块化脚本：每一步单独脚本，方便理解与调试。
-* 自动日志：缺失统计、效应量质检均导出到 results/logs/。
-* 可扩展性：只需在 config 中修改 indicator，即可复用到 MBC、DOC、产量等指标。
-* 可复现性：后续可用 renv 锁定环境，保证不同电脑/年份均能复现。
-
-## 📊 Outputs
-
-* Figures: results/figures/
-      * Fig1_Forest_SOC.png
-      * FigS1_Funnel_SOC.png
-* Tables: results/tables/
-      * Tab1_OverallEffects_SOC.csv
-      *  TabS1_Subgroups_SOC.csv
-* Logs: results/logs/
-      * validate_SOC_missing.csv
-      * datacheck_soc.csv
-
-## ✨ Next Steps
-
-* 完成 05_meta_models.R（随机效应模型、异质性检验）
-* 完成 06_sensitivity.R（leave-one-out, fail-safe N, Egger）
-* 完成 08_visualization.R（森林图、漏斗图、亚组分析）
-* 撰写 docs/prisma/ 和 docs/manuscript/（论文材料）

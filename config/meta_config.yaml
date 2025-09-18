@@ -1,0 +1,154 @@
+# =========================
+# config/meta_config.yaml
+# 功能：集中存放项目的关键配置
+# Meta-analysis master config
+# 说明：
+# - 所有脚本（00→05）从此文件读取参数，保持联动。
+# - 仅需修改 indicator、分组与个别规则即可复用到其他指标。
+# =========================
+
+# -------- 项目路径（相对项目根目录）--------
+paths:
+  raw_xlsx: "data/raw/Original_DataExtraction.xlsx"   # 原始Excel（长表）
+  interim_dir: "data/interim"                         # 中间数据目录（02/03产物）
+  processed_dir: "data/processed"                     # 效应量等处理后数据（04产物）
+  logs_dir: "results/logs"                            # 日志与检查表
+  tables_dir: "results/tables"                        # 统计结果表（05产物）
+  figures_dir: "results/figures"                      # 图件（森林图等）
+  models_dir: "results/models"                        # RDS模型对象
+
+# ---- 目标分析指标 ----
+indicator: "SOC"             # 例如：SOC, TN, pH, yield等。改此项即可切换指标（流程复用）
+
+# -------- 原始数据所在工作表 与 列名映射 --------
+sheets:
+  longdata: "LongData"       # 存放逐条提取的数据
+  summary: "Summary"         # （如果有的话，用于总览）
+
+
+# ---- 列名映射 ----
+columns:
+  # 必需列（与Excel表头一致；区分大小写）
+  indicator: "Indicator"   # 指标名（如 SOC/TN/pH/...）
+  unit:      "Unit"        # 计量单位（用于02统一单位；lnRR无量纲，但统一便于复用）
+  mean_e:    "Mean_E"      # 处理组均值
+  sd_e:      "SD_E"        # 处理组SD（可缺失，后续补齐）
+  n_e:       "n_E"         # 处理组样本量
+  mean_c:    "Mean_C"      # 对照组均值
+  sd_c:      "SD_C"        # 对照组SD（可缺失，后续补齐）
+  n_c:       "n_C"         # 对照组样本量"
+
+  # 可选列（存在则使用；没有也不报错）
+  se_e: "SE_E"                # 处理组SE（若提供，可用 SD = SE*sqrt(n) 补齐）
+  se_c: "SE_C"                # 对照组SE
+  study_id: "StudyID"         # 研究编号：同一研究共享同一数字（你已提供并满足要求）
+  author_year: "Author_Year"  # “作者_年份”（用于森林图标签/人工核对）
+  depth_cm: "Soil depth(cm)"  # 土层原始字符串（如 "0-20","10-20"；可能被Excel转成日期）
+  crop: "Crop types"          # 作物类型（可用于亚组/元回归）
+  fert: "Organic fertilizer type"   # 肥料类型（可用于亚组/元回归）
+  duration_yr: "Duration(years)"    # 持续年限（可用于元回归）
+  region: "Region"                  # 地区（可用于亚组/元回归）
+  crop_sys: "Cropping system"       # 种植制度（可用于亚组/元回归）
+  rate: "Substitution_ratio(%)"     # 有机肥替代率（可用于元回归）
+  # 其他自定义字段可继续在脚本中引用（如 MAT/MAP/pH/持续年限等）
+
+# -------- 分组与清洗规则（02 使用）--------
+grouping:
+  # 土层分组模式：
+  # - "binary": 以“上界 ≤ top_cut_cm”为Topsoil_0_20，否则Subsoil_>20（最稳健，样本少时推荐）
+  # - "3bin"  : 按中点分为 0–10 / 10–20 / >20
+  # - "fine"  : 按中点分箱到等宽层（见 fine_breaks/labels）
+  soil_layer_mode: "3bin"
+
+  # binary模式阈值（单位cm）：上界 ≤ top_cut_cm 判为Topsoil
+  top_cut_cm: 20
+
+  # 细分层位的断点与标签（仅在 mode="fine" 时使用）：
+  # 注意：YAML 不易直接写 Inf，这里用 9999 代表“上界无穷大”，在脚本中等价处理。
+  fine_breaks: [0, 10, 20, 30, 40, 9999]
+  fine_labels: ["0-10", "10-20", "20-30", "30-40", ">40"]
+
+units:
+  # 目标单位声明（便于02统一单位；示例以SOC为 g/kg）
+  SOC_target_unit: "g/kg"
+  # 目前在 utils/functions_clean.R 里：已将 "%", "mg/g" 等换算到 g/kg
+  # 如需扩展到其他指标，在该utils中继续添加规则。
+
+# -------- SD 补齐规则（03 使用）--------
+imputation:
+  from_se: true            # 若提供 SE，则优先 SD = SE * sqrt(n)
+  cv_method: "average"     # "average" 表示 mr×Mi：mr = 平均(已报道 SD/Mean)，SD_i = mr * Mean_i
+  default_cv: 0.10         # 若仍缺失，兜底 SD = 0.10 * Mean（保守）
+  prefer_std_cols: true    # 若02生成了 *_std 列，03/04优先使用标准化列（否则回退原始列）
+
+# ========= 效应量计算（04 使用）=========
+effect:
+  measure: "lnRR"           # 当前固定 lnRR；若未来扩展比值/差值，这里可扩展
+  # 04 内部会做严格可用性筛查（Mean>0、n>0、vi>0），无需特别开关
+
+# -------- 模型与稳健性（05 及后续 06/07 使用）--------
+model:
+  method: "DL"             # 合并方法："REML"（默认稳健）| "ML" | "DL" | "HS" | "SJ" | "EB" 等（见 metafor::rma.mv）
+  test: "knha"             # p值计算方法："t"（默认）| "knha"（更稳健，推荐）| "z"
+  conf_level: 0.95          # 置信水平
+  pred_level: 0.95          # 预测区间置信水平
+  multilevel: true         # 是否使用多层模型（rma.mv，随机截距 ~1|StudyID/EffectID）
+  robust_cluster: true     # 是否计算聚类稳健SE（CR2，以 StudyID 聚类）
+  cluster_col: "StudyID"   # 聚类键（你已提供 StudyID）
+  # 提示：
+  # - 若 multilevel=false，则使用 rma.uni（随机效应）；robust_cluster 仍可叠加稳健SE。
+  # - 若同研究多条效应、公用对照，建议 multilevel=true + robust_cluster=true。
+
+# -------- 森林图/输出细节（05 使用）--------
+plotting:
+  forest:
+    slab_col: "Author_Year"  # 森林图标签优先列（不存在则脚本内部回退到 StudyID 或不显示）
+    width_px: 1600           # 导出PNG宽度（像素）
+    height_px: 3000         # 导出PNG高度（像素）
+    dpi: 600                 # 分辨率
+    xlab: "ln Response Ratio (lnRR)"  # x轴标题
+    # 轴范围自动；若需固定增加：
+    # xlim: {lower: null, upper: null}  # 可设为数值，如 -1.5 / 1.5
+
+# -------- 导出/显示选项（统一用 write_excel_csv 写CSV，Excel友好）--------
+export:
+  csv_encoding: "excel"     # 占位说明：我们在 utils/write_safe_csv() 中统一使用 readr::write_excel_csv()
+  digits_round:
+    lnRR: 3                 # 表格中 lnRR 保留位数
+    pct: 2                  # 回译百分比保留位数
+    tau2: 6
+    Q: 3
+    I2: 1
+
+# ========= 亚组分析（06 使用）=========
+subgroup:
+  enable: true
+  # 循环分组变量清单（实际存在才会运行；可按需增减/排序）
+  group_vars: ["Soil_layer", "Region", "Crop types", "Organic fertilizer type"]
+  min_k: 3                    # 分组内最少样本量（少于此阈值的分组不汇总）
+  # 汇总与绘图的导出开关可在 06 中读取这些键（后续重构 06 时生效）
+  export_tables: true
+  export_forest: true
+  forest_width_px: 1800
+  forest_height_px: 2400
+  forest_dpi: 600
+
+# ========= 元回归（07 预留，不立即使用）=========
+metareg:
+  enable: false               # 先关闭；等 06 完成后再启用
+  covariates: ["Duration(years)", "Substitution_ratio(%)"]  # 仅示例
+  center_scale: true          # 是否中心化/标准化数值协变量
+  poly_terms: []              # 多项式项如 ["I(rate^2)"]（含原样写入公式的字符串）
+
+# ========= 稳健性/发表偏倚（08/09 预留）=========
+sensitivity:
+  leave1out: true             # leave-one-out
+  influence: true             # influence diagnostics
+  cooks_distance: true        # Cook's D
+  trimfill: false             # trim-and-fill
+  egger: false                # Egger 回归（lnRR 可做，但我们晚点再启用）
+  
+# -------- 复现性（将来启用）--------
+reproducibility:
+  use_renv: false           # 先跑通流程，后期再锁定依赖
+  seed: 12345               # 若后续需要抽样或自助法，可统一设置随机种子

@@ -1,0 +1,105 @@
+# =========================
+# config/plot_theme.yaml
+# 作用：集中管理“审美/主题”与“视觉编码”的默认值，
+#       供 05（森林图）、06（亚组森林/分面）、08（稳健性图）等统一调用。
+# 说明：本文件不会被 00–04 使用，完善它不会影响之前流程。
+# =========================
+
+# ---- 全局主题（ggplot2::theme_* 与自定义元素）----
+theme:
+  base_family:
+    windows: "Arial"          # Windows 上的安全英文字体
+    mac: "Arial"              # macOS 上的安全英文字体（苹方在 R/设备上不总是可用）
+    linux: "DejaVu Sans"      # Linux 常见字体
+  base_size: 11               # 全局基础字号
+  line_size: 0.4              # 线条粗细（单位 mm）
+  rect_size: 0.3              # 矩形边框粗细（单位 mm）
+  text_color: "#2A2A2A"       # 主体文本颜色
+  bg_color:   "#FFFFFF"       # 画布背景色
+  panel_bg:   "#FFFFFF"       # 面板背景色
+  grid_major: "#DCDCDC"       # 主网格线颜色
+  grid_minor: "#EEEEEE"       # 次网格线颜色
+  strip_bg:   "#F4F4F4"       # 分面条背景色
+  strip_text: "#333333"       # 分面条文字色
+  legend_bg:  "#FFFFFF"       # 图例背景
+  legend_key: "#FFFFFF"       # 图例键背景
+  axis_title_size: 11
+  axis_text_size: 10
+  facet_strip_size: 10
+  caption_size: 9
+  title_size: 12
+  # 数学文本（如 lnRR）是否使用衬线体（一般保持 false，更清晰）
+  use_serif_math: false
+
+# ---- 颜色与形状（森林图/点区间图的默认视觉编码）----
+aesthetics:
+  # 效应点颜色（单组整体/未分组时）
+  point_color: "#1F77B4"
+  # 置信区间（CI）颜色
+  ci_color: "#1F77B4"
+  # 预测区间（PI）颜色（若绘制）
+  pi_color: "#FF7F0E"
+  # 总体合并（钻石/多边形）填充/边框
+  overall_fill: "#4C78A8"
+  overall_color: "#2F5597"
+
+  # 分组调色盘（亚组/分面用，够用的 8 色；可按需增删）
+  palette:
+    - "#1F77B4"  # 蓝
+    - "#FF7F0E"  # 橙
+    - "#2CA02C"  # 绿
+    - "#D62728"  # 红
+    - "#9467BD"  # 紫
+    - "#8C564B"  # 棕
+    - "#E377C2"  # 粉
+    - "#7F7F7F"  # 灰
+
+  # 点形状/大小/线宽
+  point_shape: 19          # 实心圆
+  point_size: 1.8          # pt
+  ci_linewidth: 0.7        # mm
+  pi_linewidth: 0.7        # mm
+  overall_alpha: 0.9
+
+# ---- 轴与刻度（森林图横轴一般是 lnRR）----
+axis:
+  x_breaks: null            # 如需固定刻度：[-1.0, -0.5, 0, 0.5, 1.0]
+  x_limits: null            # 固定范围：{min: -1.5, max: 1.5}
+  x_zero_line: true         # 是否加 0 竖线（森林图常用）
+  x_zero_linetype: "dashed"
+  x_zero_linewidth: 0.5
+  x_zero_color: "#888888"
+
+# ---- 误差条与多边形样式 ----
+intervals:
+  ci_caps: false            # 置信区间末端是否加帽
+  cap_width: 0.01           # 相对宽度（数据空间比例）
+  overall_poly_height: 0.8  # 合并多边形高度（metafor::addpoly 的行高感知，不同设备略有出入）
+
+# ---- 图例与分面 ----
+legend:
+  position: "right"         # "right"|"bottom"|"top"|"none"
+  title: null               # 为空则不显示标题
+  key_size: 10              # px
+  text_size: 10
+
+facet:
+  ncol: null
+  nrow: null
+  scales: "fixed"           # "fixed"|"free_x"|"free_y"|"free"
+  space: "fixed"            # "fixed"|"free_x"|"free_y"|"free"
+
+# ---- 数值格式（回译为百分比等时统一保留位数）----
+format:
+  digits_lnRR: 3
+  digits_pct: 2
+  digits_tau2: 6
+  digits_Q: 3
+  digits_I2: 1
+
+# ---- 文件导出（不同图共享的默认导出规格；05 可被 meta_config 覆盖）----
+export:
+  width_px: 1800
+  height_px: 2400
+  dpi: 600
+  device: "png"             # 将来可扩展 "pdf"|"svg"
