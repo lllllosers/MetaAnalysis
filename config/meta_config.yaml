@@ -88,7 +88,11 @@ effect:
 
 # -------- 模型与稳健性（05 及后续 06/07 使用）--------
 model:
-  method: "DL"             # 合并方法："REML"（默认稳健）| "ML" | "DL" | "HS" | "SJ" | "EB" 等（见 metafor::rma.mv）
+  method: "DL"             # 合并方法（区分模型类型）：
+                           #   - 单层随机效应 rma.uni 支持 REML/ML/DL/HS/SJ/EB 等常见估计器。
+                           #   - 多层 rma.mv 仅接受 REML/ML/EB/PM/VC。
+                           #     若 multilevel=true 且配置其他方法，脚本会自动回退到 REML，并在日志中提示具体映射。
+                           #   - 如需固定使用 DL/HS 等方法，请将 multilevel 设为 false，或改用能兼容的估计方案。
   test: "knha"             # p值计算方法："t"（默认）| "knha"（更稳健，推荐）| "z"
   conf_level: 0.95          # 置信水平
   pred_level: 0.95          # 预测区间置信水平
