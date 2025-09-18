@@ -21,7 +21,8 @@ meta_params   <- cfg$model %||% list()
 plot_cfg      <- cfg$plotting$forest %||% list()
 digits_cfg    <- cfg$export$digits_round %||% list()
 
-meta_method        <- meta_params$method        %||% "REML"
+meta_method_input  <- meta_params$method        %||% "REML"   # 记录用户在 YAML 中声明的 method，便于消息提示。
+meta_method        <- toupper(meta_method_input)               # metafor::rma* 偏好大写关键字，这里统一转换。
 meta_test          <- meta_params$test          %||% "knha"
 conf_level         <- meta_params$conf_level    %||% 0.95
 pred_level         <- meta_params$pred_level    %||% 0.95
@@ -115,6 +116,21 @@ dat$.obs_id <- dat$.row_id
 # ---- 3) 拟合模型 ----
 fit_control <- list(stepadj = 0.5)
 rma_test    <- if (tolower(meta_test) == "knha") "knha" else meta_test
+# rma.mv 仅接受 REML/ML/EB/PM/VC 等有限几种估计方法；提前检查，必要时回退。
+mv_supported_methods <- c("REML", "ML", "EB", "PM", "VC")
+mv_method <- meta_method
+
+if (use_multilevel) {
+  if (!mv_method %in% mv_supported_methods) {
+    fallback_method <- "REML"
+    message(sprintf(
+      "[05_meta] method='%s' 不支持 rma.mv，多层模型将回退至 '%s'（overall 表也会记录实际方法）。",
+      meta_method_input,
+      fallback_method
+    ))
+    mv_method <- fallback_method
+  }
+}
 
 if (use_multilevel) {
   message("[05_meta] 使用 rma.mv (multilevel) 模型。")
@@ -122,7 +138,7 @@ if (use_multilevel) {
     yi     = yi,
     V      = vi,
     random = ~ 1 | .cluster_id/.obs_id,
-    method = meta_method,
+    method = mv_method,
     test   = rma_test,
     level  = conf_level,
     control = fit_control,
@@ -142,6 +158,9 @@ if (use_multilevel) {
   )
   model_type <- "rma.uni"
 }
+
+# 记录实际拟合所使用的 method，确保导出表格与日志与模型保持一致。
+applied_method <- if (use_multilevel) mv_method else meta_method
 
 # ---- 3.1) 聚类稳健 SE ----
 robust_obj <- NULL
@@ -189,7 +208,7 @@ overall_tbl <- tibble::tibble(
   indicator        = cfg$indicator,
   k                = k,
   model_type       = model_type,
-  method           = meta_method,
+  method           = applied_method,
   test             = rma_test,
   conf_level       = conf_level,
   pred_level       = pred_level,
@@ -256,7 +275,7 @@ hetero_tbl <- tibble::tibble(
   indicator        = cfg$indicator,
   k                = k,
   model_type       = model_type,
-  method           = meta_method,
+  method           = applied_method,
   Q                = Q_val,
   df_Q             = Q_df,
   Q_pval           = Q_pval,
@@ -341,5 +360,5 @@ message(sprintf(
   overall_tbl$yi_ci_lb,
   overall_tbl$yi_ci_ub,
   ifelse(is.na(hetero_tbl$I2), "NA", sprintf("%.1f%%", hetero_tbl$I2)),
-  meta_method
+  applied_method
 ))
